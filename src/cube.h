@@ -2,32 +2,32 @@ std::vector<float> generateCubeVertices(float size)
 {
     float halfSize = size / 2.0f;
     return {
-        // zadní strana (red)
+        // zadni strana (red)
         -halfSize, -halfSize, -halfSize,  1.0f, 0.0f, 0.0f,
          halfSize, -halfSize, -halfSize,  1.0f, 0.0f, 0.0f,
          halfSize,  halfSize, -halfSize,  1.0f, 0.0f, 0.0f,
         -halfSize,  halfSize, -halfSize,  1.0f, 0.0f, 0.0f,
-        // přední strana (green)
+        // predni strana (green)
         -halfSize, -halfSize,  halfSize,  0.0f, 1.0f, 0.0f,
          halfSize, -halfSize,  halfSize,  0.0f, 1.0f, 0.0f,
          halfSize,  halfSize,  halfSize,  0.0f, 1.0f, 0.0f,
         -halfSize,  halfSize,  halfSize,  0.0f, 1.0f, 0.0f,
-        // levá strana (blue)
+        // leva strana (blue)
         -halfSize, -halfSize, -halfSize,  0.0f, 0.0f, 1.0f,
         -halfSize,  halfSize, -halfSize,  0.0f, 0.0f, 1.0f,
         -halfSize,  halfSize,  halfSize,  0.0f, 0.0f, 1.0f,
         -halfSize, -halfSize,  halfSize,  0.0f, 0.0f, 1.0f,
-        // pravá strana (yellow)
+        // prava strana (yellow)
          halfSize, -halfSize, -halfSize,  1.0f, 1.0f, 0.0f,
          halfSize,  halfSize, -halfSize,  1.0f, 1.0f, 0.0f,
          halfSize,  halfSize,  halfSize,  1.0f, 1.0f, 0.0f,
          halfSize, -halfSize,  halfSize,  1.0f, 1.0f, 0.0f,
-        // dolní strana (purple)
+        // dolni strana (purple)
         -halfSize, -halfSize, -halfSize,  1.0f, 0.0f, 1.0f,
          halfSize, -halfSize, -halfSize,  1.0f, 0.0f, 1.0f,
          halfSize, -halfSize,  halfSize,  1.0f, 0.0f, 1.0f,
         -halfSize, -halfSize,  halfSize,  1.0f, 0.0f, 1.0f,
-        // horní strana (cyan)
+        // horni strana (cyan)
         -halfSize,  halfSize, -halfSize,  0.0f, 1.0f, 1.0f,
          halfSize,  halfSize, -halfSize,  0.0f, 1.0f, 1.0f,
          halfSize,  halfSize,  halfSize,  0.0f, 1.0f, 1.0f,
@@ -39,17 +39,21 @@ std::vector<float> generateCubeVertices(float size)
 std::vector<unsigned int> generateCubeIndices()
 {
     return {
-        // zadní strana
+        /*
+         pro popis strany je zavedeno indexovani
+         propojeni mezi jednotlivymi hranami kostky je umozneno pomoci na sebe navazujicich indexu
+        */
+        // zadni strana
         0, 1, 2, 2, 3, 0,
-        // přední strana
+        // predni strana
         4, 5, 6, 6, 7, 4,
-        // levá strana
+        // leva strana
         0, 3, 7, 7, 4, 0,
-        // pravá strana
+        // prava strana
         1, 5, 6, 6, 2, 1,
-        // dolní strana
+        // dolni strana
         0, 1, 5, 5, 4, 0,
-        // horní strana
+        // horni strana
         3, 2, 6, 6, 7, 3
     };
 }
@@ -66,19 +70,19 @@ std::vector<unsigned int> handleCubeIntoBuffers(const std::vector<float>& vertic
 
     glBindVertexArray(VAO_cube);
 
-    // pro vrcholky
+    // predani vrcholku do VBO
     glBindBuffer(GL_ARRAY_BUFFER, VBO_cube);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
-    // pozice layout 0
+    // pozice = layout 0
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // barva layout 1
+    // barva = layout 1
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // pro indicie tj spojení správně na každé straně kostky
+    // provadi vykresleni pomoci indexu
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_cube);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
@@ -90,4 +94,3 @@ std::vector<unsigned int> handleCubeIntoBuffers(const std::vector<float>& vertic
     buffers.push_back(EBO_cube);
     return buffers;
 }
-

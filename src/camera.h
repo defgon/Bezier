@@ -10,6 +10,7 @@
 
 class Camera 
 {
+    // nastaveni uvodni pozice kamery
     public:
     glm::vec3 Position;
     glm::vec3 Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -29,9 +30,13 @@ class Camera
 
     void Matrix(float FOVdeg, float nearPlane, float farPlane, unsigned int shaderProgram, const char* uniform, bool is2DMode)
     {
+        // 2 matice zobrazeni a to pohledova a projekcni (vysledek je zavisly na kombinaci techto dvou matic)
         glm::mat4 view = glm::mat4(1.0f);
         glm::mat4 projection = glm::mat4(1.0f);
-
+        /*
+         pro 2d zobrazeni je pouzita ortograficka projekce 
+         a pro 3d zobrazeni se pouziva perspektivni projekce
+        */
         if (is2DMode) {
             projection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
         } else {
@@ -41,7 +46,7 @@ class Camera
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, uniform), 1, GL_FALSE, glm::value_ptr(projection * view));
     }
 
-
+    // umoznuje ovladani kamery pomoci klavesnice
     void Inputs(GLFWwindow* window)
     {
         if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)

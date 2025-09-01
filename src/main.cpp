@@ -16,14 +16,28 @@
 #include "bezierSurface.h"
 #include "cube.h"
 
-// X na okně (umožní zavřít okno)
+/*
+  POPIS PROGRAMU
+  **************
+- jako prvni zobrazuje program 2d bezierovu krivku
+- po rozevreni menu na levo lze manipulovat s jednotlivymi body krivky pomoci posuvniku 
+- v menu dale je zde take umozneno menit krok krivky a tim i samotne zobrazeni
+- pro prepnuti do 3d bezierovy plochy je treba rozkliknout "Basic window settings" a vybrat "Go 3D plane"
+- ovladani jednotlivych bodu plochy v 3d je umozneno pomoci sipek na klavesnici
+- prepinani mezi jednotlivymi body v 3d plose je umozneno pomoci Ctrl+Cisel (sloupec) a Cisel (radek)
+- v menu dale je zde take umozneno menit krok plochy (tj. její spojitost)
+- otaceni kamery v 3d je umozneno pomoci tlacitek WASD (pro rotaci), mezernik pro oddaleni kamery 
+  a shift pro priblizeni
+*/
+
+// k uzavreni okna
 void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 
-// přečte kódy shaderů
+// umoznuje nacitani shaderu ze souboru
 const char* readShader(const std::string& filename) 
 {
     std::ifstream shaderFile(filename);
@@ -38,7 +52,7 @@ const char* readShader(const std::string& filename)
 
     char* shaderCodeStr = new char[shaderCode.length() + 1];
     std::copy(shaderCode.begin(), shaderCode.end(), shaderCodeStr);
-    shaderCodeStr[shaderCode.length()] = '\0';
+    shaderCodeStr[shaderCode.length()] = '\0'; // ukonceni stringu
 
     return shaderCodeStr;
 }
@@ -73,12 +87,12 @@ std::vector<unsigned int> handleShaderProgram(const char* fragment_shaderCode, c
 
 int main() 
 {
-    // spuštění opengl
     if(!glfwInit()){
         std::cerr << "Failed to initialize GLFW\n";
         return -1;
     }
 
+    // velikosti okna
     const unsigned int width = 1000;
     const unsigned int height = 600;
 
@@ -96,11 +110,11 @@ int main()
         glfwTerminate();
         return -1;
     }
-    // čené pozadí
+    // barva pozadi okna
     glClearColor(0, 0, 0, 1.0f);
 
 
-    // spuštění IMGUI
+    //IMGUI
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -110,10 +124,10 @@ int main()
     ImGui_ImplOpenGL3_Init("#version 330");
     // 2d/3d zobrazení
     bool is2DMode = true;
-    // krok/zjemění bezierovy křivky
+    // krok bezierovy krivky 2d
     float step2d = 0.01f;
 
-    // kontrolní body pro 2d
+    // kontrolni body pro 2d
     glm::vec3 controlPoints2d[4] = {
         {0.5f, 0.5f, 0.0f},
         {0.5f, -0.5f, 0.0f},
@@ -125,29 +139,31 @@ int main()
     glm::vec3 controlPoints3d[4][4];
     generatePointsOnGrid(0.5f, 0.5f, controlPoints3d);
     std::vector<glm::vec3> bezierSurfacePoints;
+    // krok bezierovy krivky 3d
     float step3d = 0.05f;
 
-    // načtení shaderů
+    // inicializace shaderu
     std::string shaderPath = "../shaders/fragment_shader.glsl";
     const char* fragment_shaderCode = readShader(shaderPath);
     shaderPath = "../shaders/vertex_shader.glsl";
     const char* vertex_shaderCode = readShader(shaderPath);
 
-    // 2d propojení
+    // 2d shader
     std::vector<unsigned int> setUpShader = handleShaderProgram(fragment_shaderCode,vertex_shaderCode);
     std::vector<unsigned int> setup2d = handlePointsIntoBuffers(controlPoints2d);
     setup2d.insert(setup2d.begin(), setUpShader.begin(), setUpShader.end());
 
-    // 3d propojení
+    // 3d nacteni kostek
     std::vector<float> cubeVertices = generateCubeVertices(0.1f);
     std::vector<unsigned int> cubeIndices = generateCubeIndices();
     std::vector<unsigned int> cubeBuffers = handleCubeIntoBuffers(cubeVertices, cubeIndices);
 
+    // umoznuje nepruhlednost v 3d zobrazeni
     glEnable(GL_DEPTH_TEST);
 
     Camera camera(width,height, glm::vec3(40.0f,40.0f,30.0f));
 
-    // pro manipulaci body ve 3d
+    // pro manipulaci bodu v 3d
     int selectedRow = 0;
     int selectedCol = 0;
     float moveSpeed = 0.01f;
@@ -157,7 +173,7 @@ int main()
         glfwPollEvents();
         processInput(window);
 
-        // IMGUI načtení
+        // IMGUI nacteni
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -165,7 +181,7 @@ int main()
             static int counter = 0;
             ImGui::Begin("Settings");
             
-            // Pro volbu 2d nebo 3d
+            // umoznuje zmenit mezi 2d a 3d krivkou/plochou
             if (ImGui::CollapsingHeader("Basic window settings")) {
                 if (ImGui::Button("Go 2D plane")) {
                     is2DMode = true;
@@ -175,7 +191,7 @@ int main()
                 }
             }
 
-            // Pro manipulaci s 2d bezierovou křivkou
+            // umoznuje ovladani jednotlivych bodu krivky v 2d
             if (is2DMode && ImGui::CollapsingHeader("2d bezier curves")) {
                 ImGui::SliderFloat("Step", &step2d, 0.01f, 1.0f, "%.3f");
                 if(ImGui::CollapsingHeader("Points")){
@@ -189,14 +205,12 @@ int main()
                     }
                 }
             }
-            // Pro manipulaci s 3d bezierovou křivkou
+            // umoznuje ovladani jednotlivych bodu plochy v 3d
             if (!is2DMode && ImGui::CollapsingHeader("3d bezier surfaces")) {
                 ImGui::SliderFloat("Step", &step3d, 0.01f, 1.0f, "%.3f");
                 ImGui::Text("Selected row: = %d", selectedRow);
                 ImGui::Text("Selected column: = %d", selectedCol);
             }
-
-            // frame rate
             ImGui::Text("Application average \n %.3f ms/frame \n (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             
             ImGui::End();
@@ -208,12 +222,13 @@ int main()
         camera.Inputs(window);
 
         if (is2DMode) {
-            // pro 2d mód načtení bezierovy křivky
+            // nastavuje kameru pro 2d zobrazeni krivky
             camera.Matrix(45.0f,0.1f,100.f, setUpShader[0],"camMatrix", is2DMode);
             render2DBezierCurve(controlPoints2d, step2d, setup2d[0], setup2d[1], setup2d[2], setup2d[3], setup2d[4], setup2d[5], setup2d[6]);
         } else {
             // pro manipulaci s kontrolnímy body ve 3d
             bool ctrlPressed = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
+            // prepinaci system mezi kontrolnimi body v 3d pomoci Ctrl+Cisel (sloupec) a Cisel (radek)
             if (ctrlPressed) {
                 if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
                     selectedCol = 0; 
@@ -234,7 +249,7 @@ int main()
                 } else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
                     selectedRow = 3;  
                 }
-
+                // ovladani jednotlivych bodu plochy v 3d pomoci sipek na klavesnici
                 if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
                     controlPoints3d[selectedRow][selectedCol].x -= moveSpeed;
                 }
@@ -248,7 +263,7 @@ int main()
                     controlPoints3d[selectedRow][selectedCol].y -= moveSpeed;
                 }
             }
-            // pro 3d mód načtení bezierovy plochy
+            // naciteni kamery pro 3d zobrazeni plochy
             camera.Matrix(45.0f,0.1f,200.f, setUpShader[0],"camMatrix", is2DMode);
             render3DBezierSurface(controlPoints3d,setUpShader[0],cubeBuffers[0],cubeIndices.size(),step3d);
         }

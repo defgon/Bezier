@@ -1,6 +1,16 @@
 #pragma once
+#include <iostream>
+#include "glad.h"
+#include <GLFW/glfw3.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include "glm.hpp"
+#include "gtc/matrix_transform.hpp"
+#include "gtc/type_ptr.hpp"
+#include <vector>
 
-// výpočet bezierovy křivky pro body P0 až P3 s krokem t
+// vypocet bezierovy krivky pro body P0 az P3 s krokem t
 glm::vec3 bezierCurve(const glm::vec3& P0, const glm::vec3& P1, const glm::vec3& P2, const glm::vec3& P3, float t) 
 {
     float b03 = (1.0f - t) * (1.0f - t) * (1.0f - t);
@@ -16,7 +26,7 @@ glm::vec3 bezierCurve(const glm::vec3& P0, const glm::vec3& P1, const glm::vec3&
     return p;
 }
 
-// výpočet bezierovy křivky kterou vidíme na obrazovce pro zadané kontrolní body
+// vypocitava body krivky pomoci bernsteinova polynomu pri kroku t
 void calculateBezierCurvePoints(const glm::vec3 controlPoints[4], float step, std::vector<glm::vec3>& curvePoints) 
 {
     curvePoints.clear();
@@ -28,32 +38,32 @@ void calculateBezierCurvePoints(const glm::vec3 controlPoints[4], float step, st
 std::vector<unsigned int> handlePointsIntoBuffers(glm::vec3 controlPoints[4])
 { 
     
-    // VBO křivka a úsečky
+    // VBO krivka a usecky
     unsigned int VBO_control, VBO_curve, VBO_lines;
     glGenBuffers(1, &VBO_control);
     glGenBuffers(1, &VBO_curve);
     glGenBuffers(1, &VBO_lines);
 
-    // VAO křivka a úsečky
+    // VAO krivka a usecky
     unsigned int VAO_control, VAO_curve, VAO_lines;
     glGenVertexArrays(1, &VAO_control);  
     glGenVertexArrays(1, &VAO_curve);
     glGenVertexArrays(1, &VAO_lines);
 
-    // VAO and VBO pro kontrolní body
+    // VAO and VBO pro kontrolni body
     glBindVertexArray(VAO_control);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_control);
     glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(glm::vec3), controlPoints, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // VAO and VBO pro body na křivce
+    // VAO and VBO pro body na krivce
     glBindVertexArray(VAO_curve);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_curve);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // předání bufferů opengl pro čáry mezi body na křivce
+    // predani bufferu opengl pro cary mezi body na krivce
     glBindVertexArray(VAO_lines);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_lines);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -69,19 +79,18 @@ std::vector<unsigned int> handlePointsIntoBuffers(glm::vec3 controlPoints[4])
     return a;
 }
 
-// pro zobrazení
+
 void render2DBezierCurve(const glm::vec3 controlPoints[4], float step, unsigned int shaderProgram,
                          unsigned int VAO_curve, unsigned int VBO_curve, 
                          unsigned int VAO_lines, unsigned int VBO_lines,
                          unsigned int VAO_control, unsigned int VBO_control) 
 {
-    // výpočet bodů na křivce
     std::vector<glm::vec3> curvePoints;
     calculateBezierCurvePoints(controlPoints, step, curvePoints);
 
     std::vector<float> curvePt;
     for (const glm::vec3& point : curvePoints) {
-        // přiřazení barvy bodům na křivce
+        // prirazeni barvy bodum na krivce
         curvePt.push_back(point.x);
         curvePt.push_back(point.y);
         curvePt.push_back(point.z);
@@ -92,7 +101,7 @@ void render2DBezierCurve(const glm::vec3 controlPoints[4], float step, unsigned 
 
     std::vector<float> controlVertices;
     for (int i = 0; i < 4; ++i) {
-        // přiřazení barvy kontrolním bodům
+        // prirazeni barvy kontrolnim bodum krivky
         controlVertices.push_back(controlPoints[i].x);
         controlVertices.push_back(controlPoints[i].y);
         controlVertices.push_back(controlPoints[i].z);
@@ -103,11 +112,11 @@ void render2DBezierCurve(const glm::vec3 controlPoints[4], float step, unsigned 
 
     glUseProgram(shaderProgram);
 
-    // ve 2d nedělá nic pouze identita
+    // ve 2d nedela nic, je to pouze identita
     glm::mat4 model = glm::mat4(1.0f);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "modelMatrix"), 1, GL_FALSE, glm::value_ptr(model));
 
-    // pro vykreslení v opengl
+    // vykresleni krivky v opengl
     glBindVertexArray(VAO_curve);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_curve);
     glBufferData(GL_ARRAY_BUFFER, curvePt.size() * sizeof(float), curvePt.data(), GL_DYNAMIC_DRAW);
@@ -119,6 +128,7 @@ void render2DBezierCurve(const glm::vec3 controlPoints[4], float step, unsigned 
 
     glDrawArrays(GL_LINE_STRIP, 0, curvePoints.size());
 
+    // vykresleni kontrolnich bodu krivky v opengl
     glBindVertexArray(VAO_control);
     glBindBuffer(GL_ARRAY_BUFFER, VBO_control);
     glBufferData(GL_ARRAY_BUFFER, controlVertices.size() * sizeof(float), controlVertices.data(), GL_DYNAMIC_DRAW);
@@ -129,10 +139,11 @@ void render2DBezierCurve(const glm::vec3 controlPoints[4], float step, unsigned 
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    // nastaveni velikosti bodu pro kontrolni body krivky
     glPointSize(5.0f);
     glDrawArrays(GL_POINTS, 0, 4);
 
-    // pro přidání čáry mezi posledním bodem a posledním bodem z bodů křivky
+    // pridani cary mezi poslednim kontrolnim bodem a poslednim bodem z bodu krivky
     if (!curvePoints.empty()) {
         std::vector<float> lineVertices = {
             controlPoints[3].x, controlPoints[3].y, controlPoints[3].z, 1.0f, 1.0f, 1.0f,
